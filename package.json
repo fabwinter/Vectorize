@@ -1,0 +1,21 @@
+{
+  "name": "vectorizer-clone",
+  "version": "1.0.0",
+  "description": "Production-ready Vectorizer.AI clone",
+  "private": true,
+  "scripts": {
+    "dev": "cd apps/web && pnpm dev",
+    "build": "cd apps/web && pnpm build",
+    "start": "cd apps/web && pnpm start",
+    "lint": "cd apps/web && pnpm lint"
+  },
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.12.1"
+}
