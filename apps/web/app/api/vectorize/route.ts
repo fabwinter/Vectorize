@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function parseNumber(formData: FormData, key: string, fallback: number, min: number, max: number): number {
+  const raw = Number(formData.get(key))
+  if (!Number.isFinite(raw)) {
+    return fallback
+  }
+
+  return clamp(raw, min, max)
+}
+
 // Simple edge detection using Sobel operator
 function detectEdges(buffer: Buffer, width: number, height: number): Buffer {
   const data = new Uint8ClampedArray(buffer)
@@ -58,15 +71,15 @@ function generateSVGFromImage(
   }
 
   const svgPaths: string[] = []
-  
+  const fillColor = colorMode === 'mono' ? '#111' : colorMode === 'limited' ? '#444' : '#333'
+
   // Create a simple border trace
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4
       if (thresholdBuffer[idx] > 128) {
         if (x % (11 - detail) === 0 && y % (11 - detail) === 0) {
-          const r = Math.floor(Math.random() * 50) + 100
-          svgPaths.push(`<circle cx="${x}" cy="${y}" r="${Math.max(1, smoothness / 2)}" fill="#333" opacity="0.6"/>`)
+          svgPaths.push(`<circle cx="${x}" cy="${y}" r="${Math.max(1, smoothness / 2)}" fill="${fillColor}" opacity="0.6"/>`)
         }
       }
     }
@@ -91,8 +104,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const colorMode = (formData.get('colorMode') as string) || 'full'
-    const detail = Number(formData.get('detail')) || 5
-    const smoothness = Number(formData.get('smoothness')) || 3
+    const detail = parseNumber(formData, 'detail', 5, 1, 10)
+    const smoothness = parseNumber(formData, 'smoothness', 3, 1, 10)
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -105,24 +118,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid image' }, { status: 400 })
     }
 
-    let processBuffer = Buffer.from(buffer)
-    if (metadata.width > 2000 || metadata.height > 2000) {
-      processBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-        .then(result => result.data)
-    } else {
-      processBuffer = await sharp(buffer)
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-        .then(result => result.data)
-    }
+    const sigma = clamp(smoothness * 0.3, 0.3, 3)
+
+    const { data: processBuffer, info } = await sharp(buffer)
+      .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+      .blur(sigma)
+      .raw()
+      .toBuffer({ resolveWithObject: true })
 
     const svg = generateSVGFromImage(
       processBuffer,
-      metadata.width,
-      metadata.height,
+      info.width,
+      info.height,
       colorMode,
       detail,
       smoothness
