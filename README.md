@@ -65,6 +65,7 @@ http://localhost:3000
 - [QUICKSTART.md](./QUICKSTART.md) - 5-minute setup guide
 - [DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md) - Production deployment
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Technical deep-dive
+- [VECTORIZER_AI_TECH_OVERVIEW.md](./VECTORIZER_AI_TECH_OVERVIEW.md) - Detailed technology overview and implementation playbook
 
 ## License
 
