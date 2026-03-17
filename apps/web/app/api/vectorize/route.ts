@@ -60,7 +60,7 @@ function buildPixelSvg(
   colorMode: ColorMode,
   paletteSize: number
 ): string {
-  const block = clamp(12 - detail, 1, 10)
+  const block = Math.max(1, Math.round(Math.pow(10, (10 - detail) / 10)))
   const rows = Math.ceil(height / block)
   const cols = Math.ceil(width / block)
   const svgRects: string[] = []
@@ -144,10 +144,12 @@ export async function POST(request: NextRequest) {
 
     const inputBuffer = Buffer.from(await file.arrayBuffer())
 
+    const sigma = clamp(0.3 + ((smoothness - 1) / 9) * 2.7, 0.3, 3)
+
     const normalized = sharp(inputBuffer)
       .ensureAlpha()
-      .blur(smoothness >= 6 ? 0.6 : 0)
-      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .blur(sigma)
+      .resize(1600, 1600, { fit: 'inside' })
 
     const { data, info } = await normalized.raw().toBuffer({ resolveWithObject: true })
 
