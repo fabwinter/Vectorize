@@ -144,9 +144,11 @@ export async function POST(request: NextRequest) {
 
     const inputBuffer = Buffer.from(await file.arrayBuffer())
 
+    const sigma = clamp(0.3 + ((smoothness - 1) / 9) * 2.7, 0.3, 3)
+
     const normalized = sharp(inputBuffer)
       .ensureAlpha()
-      .blur(smoothness >= 6 ? 0.6 : 0)
+      .blur(sigma)
       .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
 
     const { data, info } = await normalized.raw().toBuffer({ resolveWithObject: true })
