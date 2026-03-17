@@ -12,6 +12,7 @@ export default function Workspace() {
   const [processingProgress, setProcessingProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string>('')
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   
   // Controls
   const [colorMode, setColorMode] = useState<'full' | 'mono' | 'limited'>('full')
@@ -23,8 +24,9 @@ export default function Workspace() {
     setOriginalImage(dataUrl)
     setSvgOutput(null)
     setFileName(file.name)
+    setUploadedFile(file)
     setError(null)
-    
+
     await vectorizeImage(file)
   }
 
@@ -71,11 +73,8 @@ export default function Workspace() {
   }
 
   const handleReVectorize = () => {
-    if (originalImage && fileName) {
-      const blob = new Blob([originalImage], { type: 'image/png' })
-      const file = new File([blob], fileName, { type: 'image/png' })
-      vectorizeImage(file)
-    }
+    if (!uploadedFile) return
+    vectorizeImage(uploadedFile)
   }
 
   const handleDownloadSVG = () => {
