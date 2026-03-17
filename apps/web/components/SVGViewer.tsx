@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface SVGViewerProps {
   svgContent: string
@@ -8,11 +8,20 @@ interface SVGViewerProps {
 
 export default function SVGViewer({ svgContent }: SVGViewerProps) {
   const [zoom, setZoom] = useState(100)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [objectUrl, setObjectUrl] = useState<string>('')
+
+  useEffect(() => {
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    setObjectUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [svgContent])
 
   const handleZoom = (direction: 'in' | 'out') => {
     setZoom(prev => {
-      const newZoom = direction === 'in' ? prev + 10 : prev - 10
-      return Math.max(50, Math.min(200, newZoom))
+      const newZoom = direction === 'in' ? prev + 25 : prev - 25
+      return Math.max(25, Math.min(400, newZoom))
     })
   }
 
@@ -36,19 +45,22 @@ export default function SVGViewer({ svgContent }: SVGViewerProps) {
       </div>
 
       {/* SVG Display */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-auto max-h-96 flex items-center justify-center">
-        <div
-          style={{
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: 'center',
-            transition: 'transform 0.2s ease-out',
-          }}
-        >
-          <div
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-            className="inline-block"
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-auto"
+        style={{ maxHeight: '70vh' }}
+      >
+        {objectUrl && (
+          <img
+            ref={imgRef}
+            src={objectUrl}
+            alt="Vectorized output"
+            style={{
+              width: zoom === 100 ? '100%' : `${zoom}%`,
+              height: 'auto',
+              display: 'block',
+              minWidth: zoom > 100 ? `${zoom}%` : undefined,
+            }}
           />
-        </div>
+        )}
       </div>
     </div>
   )
