@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import sharp from 'sharp'
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function parseNumber(formData: FormData, key: string, fallback: number, min: number, max: number): number {
+  const raw = Number(formData.get(key))
+  if (!Number.isFinite(raw)) {
+    return fallback
+  }
+
+  return clamp(raw, min, max)
+}
+
 // Simple edge detection using Sobel operator
 function detectEdges(buffer: Buffer, width: number, height: number): Buffer {
   const data = new Uint8ClampedArray(buffer)
@@ -91,8 +104,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const colorMode = (formData.get('colorMode') as string) || 'full'
-    const detail = Number(formData.get('detail')) || 5
-    const smoothness = Number(formData.get('smoothness')) || 3
+    const detail = parseNumber(formData, 'detail', 5, 1, 10)
+    const smoothness = parseNumber(formData, 'smoothness', 3, 1, 10)
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -105,24 +118,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid image' }, { status: 400 })
     }
 
-    let processBuffer = Buffer.from(buffer)
-    if (metadata.width > 2000 || metadata.height > 2000) {
-      processBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-        .then(result => result.data)
-    } else {
-      processBuffer = await sharp(buffer)
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-        .then(result => result.data)
-    }
+    const sigma = clamp(smoothness * 0.3, 0.3, 3)
+
+    const { data: processBuffer, info } = await sharp(buffer)
+      .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+      .blur(sigma)
+      .raw()
+      .toBuffer({ resolveWithObject: true })
 
     const svg = generateSVGFromImage(
       processBuffer,
-      metadata.width,
-      metadata.height,
+      info.width,
+      info.height,
       colorMode,
       detail,
       smoothness
