@@ -26,7 +26,7 @@ export default function Workspace() {
     setFileName(file.name)
     setUploadedFile(file)
     setError(null)
-    
+
     await vectorizeImage(file)
   }
 
@@ -73,9 +73,8 @@ export default function Workspace() {
   }
 
   const handleReVectorize = () => {
-    if (uploadedFile) {
-      vectorizeImage(uploadedFile)
-    }
+    if (!uploadedFile) return
+    vectorizeImage(uploadedFile)
   }
 
   const handleDownloadSVG = () => {
